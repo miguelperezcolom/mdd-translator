@@ -1,0 +1,42 @@
+# This workflow will build a package using Maven and then publish it to GitHub packages when a release is created
+# For more information see: https://github.com/actions/setup-java#apache-maven-with-a-settings-path
+
+name: Maven Package
+
+on: [push]
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 11
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+        server-id: mateu-central # Value of the distributionManagement/repository/id field of the pom.xml
+        server-username: MAVEN_USERNAME
+        server-password: MAVEN_CENTRAL_TOKEN
+
+    - name: Build with Maven
+      run: mvn -B install --file pom.xml
+
+# already done
+#    - name: Checkout
+#      uses: actions/checkout@v1
+
+    # Install NPM dependencies, cache them correctly
+    # and run all Cypress tests
+    - name: Cypress run
+      uses: cypress-io/github-action@v2
+      with:
+        working-directory: e2e_tests
+        start: mvn jetty:run
+        wait-on: 'http://localhost:8080'
+
+    - name: Publish to GitHub Packages Apache Maven
+      run: mvn deploy
+      env:
+        MAVEN_USERNAME: ${{ secrets.REPO_USERNAME }}
+        MAVEN_CENTRAL_TOKEN: ${{ secrets.REPO_PASSWORD }}
